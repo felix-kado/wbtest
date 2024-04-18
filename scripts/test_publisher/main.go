@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -80,18 +79,26 @@ func getSampleJSON() ([]byte, error) {
 	return data, err
 }
 
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return fallback
+}
+
 func main() {
+	natsUrl := getEnv("NATS_URL", nats.DefaultURL)
 	gofakeit.Seed(0)
 
-	js, err := JetStreamInit()
+	js, err := JetStreamInit(natsUrl)
 	if err != nil {
 		log.Fatalf("Cannot init Jetstream")
 	}
 
-	for {
+	for i := 0; i < 10; i++ {
 
-		fmt.Println("Press 'Enter' to send the order data to JetStream...")
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		// fmt.Println("Press 'Enter' to send the order data to JetStream...")
+		// bufio.NewReader(os.Stdin).ReadBytes('\n')
 		publishReviews(js)
 	}
 }
@@ -101,8 +108,8 @@ const (
 	StreamSubjects = "ORDERS.*"
 )
 
-func JetStreamInit() (nats.JetStreamContext, error) {
-	nc, err := nats.Connect(nats.DefaultURL)
+func JetStreamInit(natsURL string) (nats.JetStreamContext, error) {
+	nc, err := nats.Connect(natsURL)
 	if err != nil {
 		return nil, err
 	}

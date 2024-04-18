@@ -5,21 +5,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"wbstorage/internal/consumer"
 	"wbstorage/internal/db"
 	"wbstorage/internal/models"
+	"wbstorage/internal/server"
+
+	"github.com/nats-io/nats.go"
 )
 
 const nWorkers = 8
 
-func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 360*time.Second)
-	defer cancel()
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return fallback
+}
 
-	// TODO: Вынести строки в переменные откружения или конфиг
-	dbConn, err := db.NewDB("user=felix dbname=wbstore sslmode=disable password=12345678 host=localhost")
+func main() {
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbUser := getEnv("DB_USER", "user")
+	dbPassword := getEnv("DB_PASSWORD", "password")
+	dbName := getEnv("DB_NAME", "dbname")
+	natsUrl := getEnv("NATS_URL", nats.DefaultURL)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 24*time.Hour)
+	defer cancel()
+	dbConnString := fmt.Sprintf("user=%s dbname=%s sslmode=disable password=%s host=%s", dbUser, dbName, dbPassword, dbHost)
+
+	dbConn, err := db.NewDB(dbConnString)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
@@ -32,7 +49,7 @@ func main() {
 	for i := 0; i < nWorkers; i++ {
 		go worker(ctx, cachedDb, jobChan)
 	}
-	consumer, err := consumer.NewConsumer(ctx)
+	consumer, err := consumer.NewConsumer(ctx, natsUrl)
 	if err != nil {
 		log.Fatalf("error initializing consumer: %v", err)
 	}
@@ -42,8 +59,13 @@ func main() {
 	for i := 0; i < nWorkers; i++ {
 		go worker(ctx, cachedDb, jobChan)
 	}
+	log.Println("Preparation successful, waiting for request")
 
-	<-ctx.Done()
+	serv := server.NewServer(cachedDb)
+	err = serv.Start(":8080")
+	if err != nil {
+		log.Fatalf("error initializing server: %v", err)
+	}
 }
 
 func worker(ctx context.Context, cachedDb *db.CachedClient, jobChan chan consumer.Job) {
@@ -79,8 +101,8 @@ func processJob(cachedDb *db.CachedClient, job consumer.Job) {
 	if orderDB, err := cachedDb.GetOrderFromCache(order.OrderUID); err != nil {
 		log.Printf("error selecting into db: %v", err)
 	} else {
-		fmt.Println("Successfully selected")
-		fmt.Println(orderDB)
+		// fmt.Println("Successfully selected")
+		fmt.Println("http://localhost:8080/" + orderDB.OrderUID)
 	}
 
 }

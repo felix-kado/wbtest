@@ -17,8 +17,8 @@ type consumer struct {
 	consumer    jetstream.Consumer
 }
 
-func NewConsumer(ctx context.Context) (*consumer, error) {
-	nc, err := nats.Connect(nats.DefaultURL)
+func NewConsumer(ctx context.Context, natsUrl string) (*consumer, error) {
+	nc, err := nats.Connect(natsUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to NATS: %w", err)
 	}

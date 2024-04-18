@@ -1,0 +1,66 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: wbstore
+      POSTGRES_USER: felix
+      POSTGRES_PASSWORD: 12345678
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U felix -d wbstore -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  nats:
+    image: nats:latest
+    command: -js
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  app:
+    build: .
+    environment:
+      DB_HOST: postgres
+      DB_USER: felix
+      DB_PASSWORD: 12345678
+      DB_NAME: wbstore
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - db_init
+      - nats
+    ports:
+      - "8080:8080"
+
+  db_init:
+    build:
+      context: .
+      dockerfile: Dockerfile.init
+
+    environment:
+      DB_HOST: postgres
+      DB_USER: felix
+      DB_PASSWORD: 12345678
+      DB_NAME: wbstore
+    depends_on:
+      postgres:
+        condition: service_healthy
+  
+  test_publisher:
+    build:
+      context: .
+      dockerfile: Dockerfile.publisher
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+      - db_init
+
+volumes:
+  pgdata:

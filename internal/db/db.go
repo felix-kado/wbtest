@@ -104,7 +104,7 @@ FROM payment WHERE order_uid = $1`
 }
 
 func (db *DataBase) CreateTables() error {
-	createTablesQuery := `CREATE TABLE orders (
+	createTablesQuery := `CREATE TABLE IF NOT EXISTS orders (
 		order_uid VARCHAR PRIMARY KEY,
 		track_number VARCHAR,
 		entry VARCHAR,
@@ -118,7 +118,7 @@ func (db *DataBase) CreateTables() error {
 		oof_shard VARCHAR
 	);
 	
-	CREATE TABLE delivery (
+	CREATE TABLE IF NOT EXISTS delivery (
 		id SERIAL PRIMARY KEY,
 		order_uid VARCHAR REFERENCES orders(order_uid),
 		name VARCHAR,
@@ -130,7 +130,7 @@ func (db *DataBase) CreateTables() error {
 		email VARCHAR
 	);
 	
-	CREATE TABLE payment (
+	CREATE TABLE IF NOT EXISTS payment (
 		id SERIAL PRIMARY KEY,
 		order_uid VARCHAR REFERENCES orders(order_uid),
 		transaction VARCHAR,
@@ -145,7 +145,7 @@ func (db *DataBase) CreateTables() error {
 		custom_fee INT
 	);
 	
-	CREATE TABLE items (
+	CREATE TABLE IF NOT EXISTS items (
 		id SERIAL PRIMARY KEY,
 		order_uid VARCHAR REFERENCES orders(order_uid),
 		chrt_id INT,
@@ -159,7 +159,8 @@ func (db *DataBase) CreateTables() error {
 		nm_id INT,
 		brand VARCHAR,
 		status INT
-	);`
+	);
+	`
 
 	if err := db.Db.Ping(); err != nil {
 		log.Fatal(err)

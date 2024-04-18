@@ -1,0 +1,23 @@
+# Основываясь на официальном образе Go
+FROM golang:1.22 as builder
+
+WORKDIR /app
+
+# Копируем файлы модуля
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Копируем все исходные файлы проекта
+COPY . ./
+
+# Собираем бинарный файл
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o test_publisher ./scripts/test_publisher/main.go
+
+# Используем alpine для финального образа
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+COPY --from=builder /app/test_publisher .
+
+CMD ["./test_publisher"]
