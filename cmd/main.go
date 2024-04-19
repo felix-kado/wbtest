@@ -44,6 +44,13 @@ func main() {
 	defer dbConn.Db.Close()
 
 	cachedDb := db.NewCachedClient(dbConn)
+	err = cachedDb.CacheWarming(1000)
+	if err != nil {
+		log.Println("Cache warmup fails")
+	} else {
+		log.Println("Successful cache warm-up")
+	}
+
 	jobChan := make(chan consumer.Job, nWorkers)
 
 	for i := 0; i < nWorkers; i++ {
@@ -94,7 +101,7 @@ func processJob(cachedDb *db.CachedClient, job consumer.Job) {
 		log.Printf("error writing into db: %v", err)
 	} else {
 		job.Msg.Ack()
-		fmt.Println("Successfully inserted")
+		log.Printf("Successfully inserted into DB: %s", order.OrderUID)
 	}
 
 	// Для мгновенной проверки, что все можно достать
@@ -102,7 +109,7 @@ func processJob(cachedDb *db.CachedClient, job consumer.Job) {
 		log.Printf("error selecting into db: %v", err)
 	} else {
 		// fmt.Println("Successfully selected")
-		fmt.Println("http://localhost:8080/" + orderDB.OrderUID)
+		log.Printf("Cheked: http://localhost:8080/%s", orderDB.OrderUID)
 	}
 
 }

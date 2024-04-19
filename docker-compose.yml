@@ -7,6 +7,7 @@ services:
       POSTGRES_USER: felix
       POSTGRES_PASSWORD: 12345678
     volumes:
+      - ./init-db/:/docker-entrypoint-initdb.d/
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
@@ -23,6 +24,12 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:4222"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 10s
 
   app:
     build: .
@@ -33,25 +40,13 @@ services:
       DB_NAME: wbstore
       NATS_URL: nats://nats:4222
     depends_on:
-      - db_init
-      - nats
+      postgres:
+        condition: service_healthy
+      # nats:
+      #   condition: service_healthy
     ports:
       - "8080:8080"
 
-  db_init:
-    build:
-      context: .
-      dockerfile: Dockerfile.init
-
-    environment:
-      DB_HOST: postgres
-      DB_USER: felix
-      DB_PASSWORD: 12345678
-      DB_NAME: wbstore
-    depends_on:
-      postgres:
-        condition: service_healthy
-  
   test_publisher:
     build:
       context: .
@@ -59,8 +54,7 @@ services:
     environment:
       NATS_URL: nats://nats:4222
     depends_on:
-      - nats
-      - db_init
+      - app
 
 volumes:
   pgdata:

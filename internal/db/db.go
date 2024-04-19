@@ -39,35 +39,23 @@ func (base *DataBase) InsertOrder(order models.Order) error {
 	if _, err := tx.NamedExec(orderQuery, order); err != nil {
 		tx.Rollback()
 		return err
-	} else {
-		fmt.Print("Order, ")
 	}
-
 	if _, err := tx.NamedExec(deliveryQuery, order.Delivery); err != nil {
 		tx.Rollback()
 		return err
-	} else {
-		fmt.Print("Delivery, ")
 	}
 
 	if _, err := tx.NamedExec(paymentQuery, order.Payment); err != nil {
 		tx.Rollback()
 		return err
-	} else {
-		fmt.Print("Payment, ")
 	}
 
-	nRows := 0
 	for _, item := range order.Items {
 		if _, err := tx.NamedExec(itemQuery, item); err != nil {
 			tx.Rollback()
 			return err
-		} else {
-			nRows++
 		}
 	}
-	fmt.Print(nRows, " Items\n")
-
 	return tx.Commit()
 }
 
@@ -101,6 +89,36 @@ FROM payment WHERE order_uid = $1`
 	}
 
 	return &order, nil
+}
+
+// ХМ... Это типо по может на урень с кешем вбросить, хотя тут вроде от конкретной реализации бд зависит...?
+
+func (db *DataBase) InsertCacheInfo(orderUID string) error {
+	query := `INSERT INTO cache_info (order_uid, creation_date, last_cache_load_date) VALUES ($1, NOW(), NOW())`
+	_, err := db.Db.Exec(query, orderUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DataBase) UpdateCacheLoadDate(orderUID string) error {
+	query := `UPDATE cache_info SET last_cache_load_date = NOW() WHERE order_uid = $1`
+	_, err := db.Db.Exec(query, orderUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DataBase) GetRecentOrders(n int) ([]string, error) {
+	var orderUIDs []string
+	query := `SELECT order_uid FROM cache_info ORDER BY last_cache_load_date DESC LIMIT $1`
+	err := db.Db.Select(&orderUIDs, query, n)
+	if err != nil {
+		return nil, err
+	}
+	return orderUIDs, nil
 }
 
 func (db *DataBase) CreateTables() error {

@@ -8,6 +8,10 @@ import (
 type OrderDB interface {
 	InsertOrder(order models.Order) error
 	SelectOrder(orderUID string) (*models.Order, error)
+	// ХМ... Не уверен?
+	InsertCacheInfo(orderUID string) error
+	UpdateCacheLoadDate(orderUID string) error
+	GetRecentOrders(n int) ([]string, error)
 	CreateTables() error
 }
 
@@ -22,6 +26,24 @@ type CachedClient struct {
 	mu    sync.Mutex
 	cache map[string]*models.Order
 	db    OrderDB
+}
+
+func (c *CachedClient) CacheWarming(n int) error {
+	UIDsList, err := c.db.GetRecentOrders(n)
+	if err != nil {
+		return err
+	}
+	for _, orderUID := range UIDsList {
+		_, err = c.GetOrderFromCache(orderUID)
+		if err != nil {
+			return err
+		}
+		err = c.db.UpdateCacheLoadDate(orderUID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *CachedClient) GetOrderFromCache(orderUID string) (*models.Order, error) {
@@ -48,6 +70,10 @@ func (c *CachedClient) GetOrderFromCache(orderUID string) (*models.Order, error)
 func (c *CachedClient) PutOrderIntoDbAndCache(order models.Order) error {
 
 	err := c.db.InsertOrder(order)
+	if err != nil {
+		return err
+	}
+	err = c.db.InsertCacheInfo(order.OrderUID)
 	if err != nil {
 		return err
 	}

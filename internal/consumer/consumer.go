@@ -78,7 +78,7 @@ func (c *consumer) StartListening(jobChan chan Job) error {
 			Msg: msg,
 		}
 
-		log.Printf("Received a JetStream message: %s", string(msg.Data())[:30])
+		log.Print("Received a JetStream message")
 		jobChan <- *job
 	}
 }
