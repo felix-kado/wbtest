@@ -70,8 +70,8 @@ const orderTemplate = `
         <div>
             <p><strong>Item Name:</strong> {{.Name}}</p>
             <p><strong>Price:</strong> {{.Price}}</p>
-            <p><strong>Quantity:</strong> {{.Quantity}}</p>
-            <p><strong>Total Price:</strong> {{.TotalPrice}}</p>
+            <p><strong>NmID:</strong> {{.NmID}}</p>
+            <p><strong>RID:</strong> {{.RID}}</p>
         </div>
     {{end}}
     {{else}}
