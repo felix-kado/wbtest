@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 	"wbstorage/internal/models"
 
 	"github.com/brianvoe/gofakeit/v6"
@@ -96,10 +97,11 @@ func main() {
 	}
 
 	for i := 0; i < 10; i++ {
-
 		// fmt.Println("Press 'Enter' to send the order data to JetStream...")
 		// bufio.NewReader(os.Stdin).ReadBytes('\n')
 		publishReviews(js)
+		time.Sleep(time.Second * 5)
+
 	}
 }
 

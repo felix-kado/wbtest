@@ -3,11 +3,11 @@ services:
   postgres:
     image: postgres:latest
     environment:
-      POSTGRES_DB: wbstore
-      POSTGRES_USER: felix
-      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./init-db/:/docker-entrypoint-initdb.d/
+      # - ./init-db/:/docker-entrypoint-initdb.d/
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
@@ -22,7 +22,7 @@ services:
     image: nats:latest
     command: -js
     ports:
-      - "4222:4222"
+      - ${NATS_PORTS}
       - "8222:8222"
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:4222"]
@@ -34,14 +34,14 @@ services:
   app:
     build: .
     environment:
-      DB_HOST: postgres
-      DB_USER: felix
-      DB_PASSWORD: 12345678
-      DB_NAME: wbstore
-      NATS_URL: nats://nats:4222
+      DB_HOST: ${POSTGRES_HOST}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      NATS_URL: ${NATS_URL}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - migrator
+      
       # nats:
       #   condition: service_healthy
     ports:
@@ -52,9 +52,24 @@ services:
       context: .
       dockerfile: Dockerfile.publisher
     environment:
-      NATS_URL: nats://nats:4222
+      NATS_URL: ${NATS_URL}
     depends_on:
-      - app
-
+      - nats
+      - migrator
+      
+  migrator:
+      image: migrate/migrate
+      volumes:
+        - ./db/migrations:/migrations
+      depends_on:
+        postgres:
+          condition: service_healthy
+      environment:
+        DATABASE_URL: ${DATABASE_URL}
+      command:
+        - "-path=/migrations"
+        - "-database=${DATABASE_URL}"
+        - "up"
+      restart: on-failure
 volumes:
   pgdata:
