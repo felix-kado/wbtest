@@ -74,7 +74,7 @@ func generateOrder() ([]byte, error) {
 }
 
 func getSampleJSON() ([]byte, error) {
-	data, err := os.ReadFile("model.json")
+	data, err := os.ReadFile("../../testdata/model.json")
 
 	return data, err
 }
