@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +12,9 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/nats-io/nats.go"
 )
+
+//go:embed "test_data/model.json"
+var sampleOrderJSON []byte
 
 func generateOrder() ([]byte, error) {
 	gofakeit.Seed(0)
@@ -74,12 +78,6 @@ func generateOrder() ([]byte, error) {
 	return jsonData, err
 }
 
-func getSampleJSON() ([]byte, error) {
-	data, err := os.ReadFile("../../testdata/model.json")
-
-	return data, err
-}
-
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
@@ -96,10 +94,21 @@ func main() {
 		log.Fatalf("Cannot init Jetstream")
 	}
 
+	if err != nil {
+		fmt.Println("Error encoding order to JSON:", err)
+		return
+	}
+	publishOrder(js, sampleOrderJSON)
+
 	for i := 0; i < 10; i++ {
-		// fmt.Println("Press 'Enter' to send the order data to JetStream...")
-		// bufio.NewReader(os.Stdin).ReadBytes('\n')
-		publishReviews(js)
+		orderJSON, err := generateOrder()
+
+		if err != nil {
+			fmt.Println("Error encoding order to JSON:", err)
+			return
+		}
+
+		publishOrder(js, orderJSON)
 		time.Sleep(time.Second * 5)
 
 	}
@@ -148,19 +157,13 @@ const (
 	SubjectNameReviewCreated = "ORDERS.order"
 )
 
-func publishReviews(js nats.JetStreamContext) {
-	orderJSON, err := generateOrder()
+func publishOrder(js nats.JetStreamContext, orderJSON []byte) {
 
-	// orderJSON, err := getSampleJSON()
-	if err != nil {
-		fmt.Println("Error encoding order to JSON:", err)
-		return
-	}
-	_, err = js.Publish(SubjectNameReviewCreated, orderJSON)
+	_, err := js.Publish(SubjectNameReviewCreated, orderJSON)
 	if err != nil {
 		log.Println(err)
 	} else {
-		log.Printf("Publisher  =>  Message:%s\n", " fake one")
+		log.Println("Publisher  =>  Message")
 	}
 
 }

@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      # - ./init-db/:/docker-entrypoint-initdb.d/
+      # - ./internal/db/init/:/docker-entrypoint-initdb.d/
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
@@ -25,11 +25,10 @@ services:
       - ${NATS_PORTS}
       - "8222:8222"
     # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:4222"]
+    #   test: ["CMD", "curl", "-f", "http://localhost:8222/healthz"]
     #   interval: 10s
     #   timeout: 5s
     #   retries: 5
-    #   start_period: 10s
 
   app:
     build: .
@@ -54,13 +53,15 @@ services:
     environment:
       NATS_URL: ${NATS_URL}
     depends_on:
-      - nats
-      - migrator
+      # nats:
+      #   condition: service_healthy
+      migrator:
+        condition: service_started
       
   migrator:
       image: migrate/migrate
       volumes:
-        - ./db/migrations:/migrations
+        - ./internal/db/migrations:/migrations
       depends_on:
         postgres:
           condition: service_healthy

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+</head>
+<body>
+    <h1>Order Details</h1>
+    <p><strong>Order UID:</strong> {{.OrderUID}}</p>
+    <p><strong>Track Number:</strong> {{.TrackNumber}}</p>
+    <p><strong>Customer ID:</strong> {{.CustomerID}}</p>
+    <p><strong>Locale:</strong> {{.Locale}}</p>
+    <h2>Delivery Info</h2>
+    {{if .Delivery}}
+    <p><strong>Name:</strong> {{.Delivery.Name}}</p>
+    <p><strong>Phone:</strong> {{.Delivery.Phone}}</p>
+    <p><strong>Address:</strong> {{.Delivery.Address}}</p>
+    {{else}}
+    <p>Delivery information is not available.</p>
+    {{end}}
+    <h2>Items</h2>
+    {{if .Items}}
+    {{range .Items}}
+        <div>
+            <p><strong>Item Name:</strong> {{.Name}}</p>
+            <p><strong>Price:</strong> {{.Price}}</p>
+            <p><strong>NmID:</strong> {{.NmID}}</p>
+            <p><strong>RID:</strong> {{.RID}}</p>
+        </div>
+    {{end}}
+    {{else}}
+    <p>No items available for this order.</p>
+    {{end}}
+</body>
+</html>
