@@ -18,13 +18,13 @@ type Server struct {
 	tmpl *template.Template
 }
 
-func NewServer(dbWithCache *db.CachedClient) *Server {
-	tmpl, _ := template.ParseFS(tmplFS, "templates/order.html")
+func NewServer(dbWithCache *db.CachedClient) (*Server, error) {
+	tmpl, err := template.ParseFS(tmplFS, "templates/order.html")
 	s := &Server{
 		db:   dbWithCache,
 		tmpl: tmpl,
 	}
-	return s
+	return s, err
 }
 
 func NewRouter(s *Server) *chi.Mux {

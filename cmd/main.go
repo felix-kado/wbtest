@@ -15,8 +15,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const nWorkers = 8
-
 func main() {
 	cfg, err := configs.LoadConfig()
 	if err != nil {
@@ -33,10 +31,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	cachedDb := db.NewCachedClient(ctx, dbConn, 100)
+	cachedDb, err := db.NewCachedClient(ctx, dbConn, 100)
 
 	if err != nil {
-		log.Println("Cache warmup fails")
+		log.Printf("Cache warmup fails: %v\n", err)
 	} else {
 		log.Println("Successful cache warm-up")
 	}
@@ -48,11 +46,11 @@ func main() {
 	go consumer.Start(ctx, group, 8)
 
 	log.Println("Preparation successful, waiting for request")
-	serv := server.NewServer(cachedDb)
-	router := server.NewRouter(serv)
-	http.ListenAndServe(":8080", router)
+	serv, err := server.NewServer(cachedDb)
 
 	if err != nil {
 		log.Fatalf("error initializing server: %v", err)
 	}
+	router := server.NewRouter(serv)
+	http.ListenAndServe(cfg.ServerPort, router)
 }

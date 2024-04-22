@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"sync"
 	"wbstorage/internal/models"
 )
@@ -13,16 +13,16 @@ type CachedClient struct {
 	db    Database
 }
 
-func NewCachedClient(ctx context.Context, db Database, n int) *CachedClient {
+func NewCachedClient(ctx context.Context, db Database, n int) (*CachedClient, error) {
 	client := &CachedClient{
 		db:    db,
 		cache: make(map[string]*models.Order),
 	}
 
 	if err := client.cacheWarming(ctx, n); err != nil {
-		log.Panicln("FAILED CAHCE WARMUP")
+		return client, fmt.Errorf("failed to warmup cache: %w", err)
 	}
-	return client
+	return client, nil
 }
 
 func (c *CachedClient) InsertOrder(ctx context.Context, order models.Order) error {

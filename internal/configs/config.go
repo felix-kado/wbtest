@@ -13,6 +13,7 @@ type Config struct { // Exported Config struct
 	DBName     string `env:"DB_NAME"`
 	NATSUrl    string `env:"NATS_URL"`
 	NWorkers   int    `env:"NWORKERS"`
+	ServerPort string `env:"SERVER_PORT"`
 	ConnString string
 }
 
