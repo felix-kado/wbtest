@@ -14,14 +14,14 @@ import (
 var tmplFS embed.FS
 
 type Server struct {
-	db   *db.CachedClient
+	db   db.Database
 	tmpl *template.Template
 }
 
-func NewServer(dbWithCache *db.CachedClient) (*Server, error) {
+func NewServer(db db.Database) (*Server, error) {
 	tmpl, err := template.ParseFS(tmplFS, "templates/order.html")
 	s := &Server{
-		db:   dbWithCache,
+		db:   db,
 		tmpl: tmpl,
 	}
 	return s, err

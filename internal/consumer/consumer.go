@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"sync"
+	"time"
 	"wbstorage/internal/db"
 	"wbstorage/internal/models"
 
@@ -31,7 +31,6 @@ func NewConsumer(ctx context.Context, db *db.CachedClient, natsUrl string) (*con
 		return nil, fmt.Errorf("error creating a new JetStream instance: %w", err)
 	}
 
-	// TODO: Вынести строки в переменные откружения или конфиг
 	streamConfig := jetstream.StreamConfig{
 		Name:     "ORDERS",
 		Subjects: []string{"ORDERS.*"},
@@ -59,11 +58,10 @@ type job struct {
 	Msg jetstream.Msg
 }
 
-// intentionally blocking. if you want nonblocking, run start inside errgroup
-func (c *consumer) Start(ctx context.Context, g *errgroup.Group, workers int) error {
+func (c *consumer) Start(ctx context.Context, g *errgroup.Group, workers int) {
 	jobs := make(chan job, workers)
 	c.startWorkers(ctx, jobs, workers, g)
-	return c.publishJobs(ctx, jobs)
+	c.publishJobs(ctx, jobs)
 }
 
 func (c *consumer) startWorkers(ctx context.Context, jobs <-chan job, workers int, g *errgroup.Group) {
@@ -84,25 +82,27 @@ func (c *consumer) startWorkers(ctx context.Context, jobs <-chan job, workers in
 	})
 }
 
-func (c *consumer) publishJobs(ctx context.Context, jobs chan<- job) error {
+func (c *consumer) publishJobs(ctx context.Context, jobs chan<- job) {
 	// here you can publish jobs to the channel
 	it, err := c.consumer.Messages()
 	if err != nil {
-		return err
+		slog.Error("Failed to retrieve messages", "error", err)
+		return
 	}
 	for {
 		select {
 		case <-ctx.Done():
 			close(jobs) // very important as it lets workers to stop
-			return nil
+			slog.Info("Context done, jobs channel closed")
 		default:
 			msg, err := it.Next()
 			if err != nil {
-				slog.Error("logs here")
+				slog.Error("Failed to get next message", "error", err)
 				continue
 			}
 			job := job{Msg: msg}
 			jobs <- job
+			slog.Info("Job published", "job", job)
 		}
 	}
 }
@@ -110,23 +110,27 @@ func (c *consumer) publishJobs(ctx context.Context, jobs chan<- job) error {
 func (c *consumer) processJob(ctx context.Context, job job) {
 	var order models.Order
 	if err := json.Unmarshal(job.Msg.Data(), &order); err != nil {
-		log.Printf("error parsing message: %v", err)
-		job.Msg.Ack()
+		slog.Error("Error parsing message", "error", err)
+		ackErr := job.Msg.Ack()
+		if ackErr != nil {
+			slog.Error("Error acknowledges a message", "error", ackErr)
+		}
 		return
 	}
+	ctxInsert, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
 
-	if err := c.db.InsertOrder(ctx, order); err != nil {
-		log.Printf("error writing into db: %v", err)
+	if err := c.db.InsertOrder(ctxInsert, order); err != nil {
+		slog.Error("Error writing into DB", "error", err)
+		return
 	} else {
-		job.Msg.Ack()
-		log.Printf("Successfully inserted into DB: %s", order.OrderUID)
+		ackErr := job.Msg.Ack()
+		if ackErr != nil {
+			slog.Error("Error acknowledges a message", "error", ackErr)
+		}
+		slog.Info("Successfully inserted into DB", "orderUID", order.OrderUID)
 	}
 
-	// Для мгновенной проверки, что все можно достать
-	if orderDB, err := c.db.SelectOrder(ctx, order.OrderUID); err != nil {
-		log.Printf("error selecting into db: %v", err)
-	} else {
-		log.Printf("Cheked: http://localhost:8080/%s", orderDB.OrderUID)
-	}
+	slog.Info("Success", "url", "http://localhost:8080/"+order.OrderUID)
 
 }

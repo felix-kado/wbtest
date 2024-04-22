@@ -28,10 +28,11 @@ CREATE TABLE IF NOT EXISTS orders (
     shardkey VARCHAR,
     sm_id INT,
     date_created TIMESTAMP,
-    oof_shard VARCHAR
+    oof_shard VARCHAR,
+    last_interaction TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS delivery (
+CREATE TABLE IF NOT EXISTS deliveries (
     id SERIAL PRIMARY KEY,
     order_uid VARCHAR REFERENCES orders(order_uid),
     name VARCHAR,
@@ -43,7 +44,7 @@ CREATE TABLE IF NOT EXISTS delivery (
     email VARCHAR
 );
 
-CREATE TABLE IF NOT EXISTS payment (
+CREATE TABLE IF NOT EXISTS payments (
     id SERIAL PRIMARY KEY,
     order_uid VARCHAR REFERENCES orders(order_uid),
     transaction VARCHAR,
@@ -72,10 +73,4 @@ CREATE TABLE IF NOT EXISTS items (
     nm_id INT,
     brand VARCHAR,
     status INT
-);
-
-CREATE TABLE cache_info (
-    order_uid VARCHAR REFERENCES orders(order_uid),
-    creation_date TIMESTAMP NOT NULL,
-    last_cache_load_date TIMESTAMP NOT NULL
 );

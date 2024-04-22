@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log/slog" // Ensure you import the slog package
 	"sync"
 	"wbstorage/internal/models"
 )
@@ -20,20 +21,24 @@ func NewCachedClient(ctx context.Context, db Database, n int) (*CachedClient, er
 	}
 
 	if err := client.cacheWarming(ctx, n); err != nil {
+		slog.Error("Failed to warm up cache", "error", err)
 		return client, fmt.Errorf("failed to warmup cache: %w", err)
 	}
+	slog.Info("Cache warmed up successfully")
 	return client, nil
 }
 
 func (c *CachedClient) InsertOrder(ctx context.Context, order models.Order) error {
 	err := c.db.InsertOrder(ctx, order)
 	if err != nil {
+		slog.Error("Failed to insert order into database", "error", err)
 		return err
 	}
 
 	c.mu.Lock()
 	c.cache[order.OrderUID] = &order
 	c.mu.Unlock()
+	slog.Info("Order cached successfully", "orderUID", order.OrderUID)
 
 	return nil
 }
@@ -42,28 +47,23 @@ func (c *CachedClient) SelectOrder(ctx context.Context, orderUID string) (*model
 	c.mu.Lock()
 	if order, found := c.cache[orderUID]; found {
 		c.mu.Unlock()
+		slog.Info("Order retrieved from cache", "orderUID", orderUID)
 		return order, nil
 	}
 	c.mu.Unlock()
 
 	order, err := c.db.SelectOrder(ctx, orderUID)
 	if err != nil {
+		slog.Error("Failed to select order from database", "error", err)
 		return nil, err
 	}
 
 	c.mu.Lock()
 	c.cache[orderUID] = order
 	c.mu.Unlock()
+	slog.Info("Order cached after database retrieval", "orderUID", orderUID)
 
 	return order, nil
-}
-
-func (c *CachedClient) InsertCacheInfo(ctx context.Context, orderUID string) error {
-	return c.db.InsertCacheInfo(ctx, orderUID)
-}
-
-func (c *CachedClient) UpdateCacheLoadDate(ctx context.Context, orderUID string) error {
-	return c.db.UpdateCacheLoadDate(ctx, orderUID)
 }
 
 func (c *CachedClient) GetRecentOrders(ctx context.Context, n int) ([]string, error) {
@@ -73,13 +73,12 @@ func (c *CachedClient) GetRecentOrders(ctx context.Context, n int) ([]string, er
 func (c *CachedClient) cacheWarming(ctx context.Context, n int) error {
 	UIDsList, err := c.GetRecentOrders(ctx, n)
 	if err != nil {
+		slog.Error("Failed to retrieve recent orders for cache warming", "error", err)
 		return err
 	}
 	for _, orderUID := range UIDsList {
 		if _, err := c.SelectOrder(ctx, orderUID); err != nil {
-			return err
-		}
-		if err := c.UpdateCacheLoadDate(ctx, orderUID); err != nil {
+			slog.Error("Failed to select order during cache warming", "error", err)
 			return err
 		}
 	}

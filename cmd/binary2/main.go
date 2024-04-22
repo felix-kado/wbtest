@@ -13,7 +13,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-//go:embed "test_data/model.json"
+//go:embed "testdata/model.json"
 var sampleOrderJSON []byte
 
 func generateOrder() ([]byte, error) {
@@ -78,18 +78,15 @@ func generateOrder() ([]byte, error) {
 	return jsonData, err
 }
 
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return fallback
-}
-
 func main() {
-	natsUrl := getEnv("NATS_URL", nats.DefaultURL)
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Panicln("Failed to load configuration", err)
+		os.Exit(1)
+	}
 	gofakeit.Seed(0)
 
-	js, err := JetStreamInit(natsUrl)
+	js, err := JetStreamInit(cfg.NATSUrl)
 	if err != nil {
 		log.Fatalf("Cannot init Jetstream")
 	}
@@ -98,9 +95,10 @@ func main() {
 		fmt.Println("Error encoding order to JSON:", err)
 		return
 	}
-	publishOrder(js, sampleOrderJSON)
+	_ = sampleOrderJSON
+	// publishOrder(js, sampleOrderJSON)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		orderJSON, err := generateOrder()
 
 		if err != nil {
@@ -109,9 +107,10 @@ func main() {
 		}
 
 		publishOrder(js, orderJSON)
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 1)
 
 	}
+
 }
 
 const (

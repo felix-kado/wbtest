@@ -20,6 +20,7 @@ type Order struct {
 	SmID              int       `json:"sm_id" db:"sm_id"`
 	DateCreated       time.Time `json:"date_created" db:"date_created"`
 	OofShard          string    `json:"oof_shard" db:"oof_shard"`
+	LastInteraction   time.Time `db:"last_interaction"`
 }
 
 type Delivery struct {

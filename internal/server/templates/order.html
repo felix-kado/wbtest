@@ -10,24 +10,62 @@
     <p><strong>Order UID:</strong> {{.OrderUID}}</p>
     <p><strong>Track Number:</strong> {{.TrackNumber}}</p>
     <p><strong>Customer ID:</strong> {{.CustomerID}}</p>
+    <p><strong>Entry:</strong> {{.Entry}}</p>
     <p><strong>Locale:</strong> {{.Locale}}</p>
+    <p><strong>InternalSignature:</strong> {{.InternalSignature}}</p>
+    <p><strong>CustomerID:</strong> {{.CustomerID}}</p>
+    <p><strong>DeliveryService:</strong> {{.DeliveryService}}</p>
+    <p><strong>ShardKey:</strong> {{.ShardKey}}</p>
+    <p><strong>SmID:</strong> {{.SmID}}</p>
+    <p><strong>DateCreated:</strong> {{.DateCreated}}</p>
+    <p><strong>OofShard:</strong> {{.OofShard}}</p>
     <h2>Delivery Info</h2>
     {{if .Delivery}}
     <p><strong>Name:</strong> {{.Delivery.Name}}</p>
     <p><strong>Phone:</strong> {{.Delivery.Phone}}</p>
+    <p><strong>Zip:</strong> {{.Delivery.Name}}</p>
+    <p><strong>Name:</strong> {{.Delivery.Zip}}</p>
+    <p><strong>City:</strong> {{.Delivery.City}}</p>
     <p><strong>Address:</strong> {{.Delivery.Address}}</p>
+    <p><strong>Region:</strong> {{.Delivery.Region}}</p>
+    <p><strong>Email:</strong> {{.Delivery.Region}}</p>
     {{else}}
     <p>Delivery information is not available.</p>
     {{end}}
+    <br>
+    <h2>Payment Info</h2>
+    {{if .Payment}}
+    <p><strong>Transaction:</strong> {{.Payment.Transaction}}</p>
+    <p><strong>RequestID:</strong> {{.Payment.RequestID}}</p>
+    <p><strong>Currency:</strong> {{.Payment.Currency}}</p>
+    <p><strong>Provider:</strong> {{.Payment.Provider}}</p>
+    <p><strong>Amount:</strong> {{.Payment.Amount}}</p>
+    <p><strong>PaymentDt:</strong> {{.Payment.PaymentDt}}</p>
+    <p><strong>DeliveryCost:</strong> {{.Payment.DeliveryCost}}</p>
+    <p><strong>GoodsTotal:</strong> {{.Payment.GoodsTotal}}</p>
+    <p><strong>CustomFee:</strong> {{.Payment.CustomFee}}</p>
+    {{else}}
+    <p>Payment information is not available.</p>
+    {{end}}
+    <br> 
     <h2>Items</h2>
     {{if .Items}}
     {{range .Items}}
         <div>
-            <p><strong>Item Name:</strong> {{.Name}}</p>
+            <p><h3>Item Name:</h3> {{.Name}}</p>
+            <p><strong>ChrtID:</strong> {{.ChrtID}}</p>
+            <p><strong>TrackNumber:</strong> {{.TrackNumber}}</p>
             <p><strong>Price:</strong> {{.Price}}</p>
-            <p><strong>NmID:</strong> {{.NmID}}</p>
             <p><strong>RID:</strong> {{.RID}}</p>
+            <p><strong>Name:</strong> {{.Name}}</p>
+            <p><strong>Sale:</strong> {{.Sale}}</p>
+            <p><strong>Size:</strong> {{.Size}}</p>
+            <p><strong>TotalPrice:</strong> {{.TotalPrice}}</p>
+            <p><strong>NmID:</strong> {{.NmID}}</p>
+            <p><strong>Brand:</strong> {{.Brand}}</p>
+            <p><strong>Status:</strong> {{.Status}}</p>
         </div>
+        <br> 
     {{end}}
     {{else}}
     <p>No items available for this order.</p>
