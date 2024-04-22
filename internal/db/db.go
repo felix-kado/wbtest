@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 	"wbstorage/internal/models"
 
 	"github.com/jmoiron/sqlx"
@@ -30,6 +31,8 @@ func NewDB(conntectionString string) (*Client, error) {
 }
 
 func (c *Client) InsertOrder(ctx context.Context, order models.Order) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
 
 	orderQuery := `
 	INSERT INTO orders 
@@ -97,6 +100,9 @@ func (c *Client) InsertOrder(ctx context.Context, order models.Order) error {
 }
 
 func (c *Client) SelectOrder(ctx context.Context, orderUID string) (*models.Order, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
+
 	order := models.Order{}
 
 	orderQuery := `
@@ -142,6 +148,9 @@ func (c *Client) SelectOrder(ctx context.Context, orderUID string) (*models.Orde
 }
 
 func (c *Client) InsertCacheInfo(ctx context.Context, orderUID string) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
+
 	query := `
 	INSERT INTO cache_info 
 		(order_uid, creation_date, last_cache_load_date) 
@@ -156,6 +165,9 @@ func (c *Client) InsertCacheInfo(ctx context.Context, orderUID string) error {
 }
 
 func (c *Client) UpdateCacheLoadDate(ctx context.Context, orderUID string) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
+
 	query := `
 	UPDATE cache_info 
 	SET last_cache_load_date = NOW() 
@@ -169,6 +181,9 @@ func (c *Client) UpdateCacheLoadDate(ctx context.Context, orderUID string) error
 }
 
 func (c *Client) GetRecentOrders(ctx context.Context, n int) ([]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
+
 	var orderUIDs []string
 	query := `
 	SELECT order_uid 

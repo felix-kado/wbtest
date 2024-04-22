@@ -17,7 +17,7 @@ import (
 
 type consumer struct {
 	consumer jetstream.Consumer
-	db       *db.CachedClient
+	db       db.Database
 }
 
 func NewConsumer(ctx context.Context, db *db.CachedClient, natsUrl string) (*consumer, error) {
@@ -58,29 +58,6 @@ func NewConsumer(ctx context.Context, db *db.CachedClient, natsUrl string) (*con
 type job struct {
 	Msg jetstream.Msg
 }
-
-// // Учечка горутины? Добавить контекст?
-// func (c *consumer) StartListening(ctx context.Context, jobChan chan Job) error {
-// 	it, err := c.consumer.Messages()
-// 	if err != nil {
-// 		return fmt.Errorf("error getting message iterator: %w", err)
-// 	}
-// 	defer it.Stop()
-
-// 	for {
-// 		msg, err := it.Next()
-// 		if err != nil {
-// 			log.Printf("error retrieving message: %v", err)
-// 			continue
-// 		}
-// 		job := &Job{
-// 			Msg: msg,
-// 		}
-
-// 		log.Print("Received a JetStream message")
-// 		jobChan <- *job
-// 	}
-// }
 
 // intentionally blocking. if you want nonblocking, run start inside errgroup
 func (c *consumer) Start(ctx context.Context, g *errgroup.Group, workers int) error {

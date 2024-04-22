@@ -18,7 +18,7 @@ func NewCachedClient(ctx context.Context, db Database, n int) *CachedClient {
 		db:    db,
 		cache: make(map[string]*models.Order),
 	}
-	// Вызов приватной функции для прогрева кеша сразу после инициализации
+
 	if err := client.cacheWarming(ctx, n); err != nil {
 		log.Panicln("FAILED CAHCE WARMUP")
 	}
